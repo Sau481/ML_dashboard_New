@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Model Results — ML Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+<h1>Model Evaluation Results</h1>
+
+<h2>Problem Type: {{ problem_type|title }}</h2>
+
+<table border="1" cellpadding="10">
+    <tr>
+        <th>Model</th>
+        <th>Metrics</th>
+    </tr>
+
+    {% for model, res in results.items() %}
+    <tr>
+        <td>{{ model }}</td>
+
+        <td>
+            {% if res.error %}
+                <span style="color:red;">Error: {{ res.error }}</span>
+            {% else %}
+
+                {% if problem_type == 'classification' %}
+                    Accuracy: {{ res.accuracy }} <br>
+                    Precision: {{ res.precision }} <br>
+                    Recall: {{ res.recall }} <br>
+                    F1-score: {{ res.f1 }} <br>
+                    Confusion Matrix: {{ res.confusion_matrix }} <br>
+                    ROC-AUC: {{ res.roc_auc }}
+                
+                {% else %}
+                    MSE: {{ res.mse }} <br>
+                    RMSE: {{ res.rmse }} <br>
+                    MAE: {{ res.mae }} <br>
+                    R² Score: {{ res.r2 }}
+                {% endif %}
+
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<br>
+<a href="{{ url_for('home') }}">Upload New CSV</a>
+
+</body>
+</html>

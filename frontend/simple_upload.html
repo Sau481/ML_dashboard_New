@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"/><title>Upload CSV</title></head>
+  <body>
+    <h3>Upload CSV (local FastAPI test)</h3>
+    <input id="f" type="file" accept=".csv" />
+    <button onclick="upload()">Upload</button>
+    <pre id="out"></pre>
+
+    <script>
+      async function upload(){
+        const file = document.getElementById('f').files[0];
+        if(!file){ alert('Select a CSV'); return; }
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('http://127.0.0.1:8000/upload', { method: 'POST', body: fd});
+        const json = await res.json();
+        document.getElementById('out').textContent = JSON.stringify(json, null, 2);
+      }
+    </script>
+  </body>
+</html>
