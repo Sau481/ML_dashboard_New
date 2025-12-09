@@ -1,25 +1,151 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>ML Practical Dashboard — Upload</title>
-    <link rel="stylesheet" href="/static/style.css">
-  </head>
-  <body>
-    <h1>ML Practical Dashboard</h1>
-    <p>Upload a CSV file to analyze (classification or regression)</p>
-    <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
-      <input type="file" name="file" accept=".csv">
-      <button type="submit">Upload</button>
-    </form>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul>
-        {% for msg in messages %}
-          <li style="color:red">{{ msg }}</li>
-        {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ML Dashboard - Upload and analyze your datasets with machine learning models">
+    <title>ML Dashboard - Upload Dataset</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Hero Section -->
+        <div class="hero">
+            <h1>🤖 ML Dashboard</h1>
+            <p>Upload your CSV dataset and let machine learning models analyze it automatically. Supports both classification and regression tasks.</p>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="glass-card">
+            <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data" id="uploadForm">
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📊</div>
+                    <h3>Drag & Drop your CSV file here</h3>
+                    <p style="color: var(--text-secondary); margin: var(--spacing-md) 0;">or</p>
+                    <label for="fileInput" class="file-input-label">
+                        Browse Files
+                    </label>
+                    <input type="file" name="file" id="fileInput" accept=".csv" required>
+                    <p style="color: var(--text-light); margin-top: var(--spacing-md); font-size: 0.875rem;">
+                        Supported format: CSV files only
+                    </p>
+                </div>
+                
+                <div id="fileInfo" class="hidden" style="margin-top: var(--spacing-md); text-align: center;">
+                    <p style="color: var(--success-color); font-weight: 600;">
+                        ✓ <span id="fileName"></span>
+                    </p>
+                </div>
+
+                <div style="text-align: center; margin-top: var(--spacing-lg);">
+                    <button type="submit" class="btn btn-primary" id="uploadBtn">
+                        Upload & Analyze
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for msg in messages %}
+                        <div class="flash">
+                            <strong>⚠️ Error:</strong> {{ msg }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Features Section -->
+        <div class="stats-grid" style="margin-top: var(--spacing-xl);">
+            <div class="stat-card">
+                <div class="stat-label">📈 Classification</div>
+                <div style="color: var(--text-secondary); margin-top: var(--spacing-sm); font-size: 0.875rem;">
+                    Logistic Regression, Random Forest, SVM, KNN, Decision Tree
+                </div>
+            </div>
+            <div class="stat-card accent">
+                <div class="stat-label">📉 Regression</div>
+                <div style="color: var(--text-secondary); margin-top: var(--spacing-sm); font-size: 0.875rem;">
+                    Linear Regression, Random Forest, SVR, KNN, Decision Tree
+                </div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-label">⚡ Auto-Processing</div>
+                <div style="color: var(--text-secondary); margin-top: var(--spacing-sm); font-size: 0.875rem;">
+                    Automatic preprocessing, encoding, and scaling
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Drag and drop functionality
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const uploadForm = document.getElementById('uploadForm');
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, () => {
+                uploadZone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, () => {
+                uploadZone.classList.remove('dragover');
+            }, false);
+        });
+
+        // Handle dropped files
+        uploadZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        }, false);
+
+        // Handle file input change
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                if (file.name.endsWith('.csv')) {
+                    fileName.textContent = file.name;
+                    fileInfo.classList.remove('hidden');
+                } else {
+                    alert('Please select a CSV file');
+                    fileInput.value = '';
+                }
+            }
+        }
+
+        // Show loading state on form submit
+        uploadForm.addEventListener('submit', (e) => {
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.innerHTML = '<span class="loading"></span> Uploading...';
+            uploadBtn.disabled = true;
+        });
+    </script>
+</body>
 </html>

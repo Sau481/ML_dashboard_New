@@ -1,55 +1,350 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Model Results — ML Dashboard</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ML Model Evaluation Results">
+    <title>Model Results - ML Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
+    <div class="container">
 
-<h1>Model Evaluation Results</h1>
+        <!-- Header -->
+        <div class="hero">
+            <h1>🎉 Model Evaluation Results</h1>
+            <p>Problem Type:
+                <strong style="color: var(--primary-color);">{{ problem_type | title }}</strong>
+            </p>
+            {% if results and results|length > 0 %}
+            <p style="font-size: 0.9rem; opacity: 0.8;">
+                Dataset: <strong>{{ results[0].dataset_size | title }}</strong>
+                (Train: {{ results[0].train_samples }} | Val: {{ results[0].val_samples }} | Test: {{
+                results[0].test_samples }})
+            </p>
+            {% endif %}
+        </div>
 
-<h2>Problem Type: {{ problem_type|title }}</h2>
+        <!-- Best Model -->
+        {% if results and results|length > 0 %}
+        <div class="glass-card" style="border:2px solid var(--primary-color)">
+            <div style="text-align:center;">
+                <h2>🏆 Best Performing Model</h2>
 
-<table border="1" cellpadding="10">
-    <tr>
-        <th>Model</th>
-        <th>Metrics</th>
-    </tr>
-
-    {% for model, res in results.items() %}
-    <tr>
-        <td>{{ model }}</td>
-
-        <td>
-            {% if res.error %}
-                <span style="color:red;">Error: {{ res.error }}</span>
-            {% else %}
+                <div class="stat-value" style="font-size:2rem;">
+                    {{ results[0].model }}
+                </div>
 
                 {% if problem_type == 'classification' %}
-                    Accuracy: {{ res.accuracy }} <br>
-                    Precision: {{ res.precision }} <br>
-                    Recall: {{ res.recall }} <br>
-                    F1-score: {{ res.f1 }} <br>
-                    Confusion Matrix: {{ res.confusion_matrix }} <br>
-                    ROC-AUC: {{ res.roc_auc }}
-                
+                <p>Test Accuracy:
+                    <strong style="color: var(--primary-color);">
+                        {{ "%.2f%%"|format(results[0].test_accuracy * 100) }}
+                    </strong>
+                </p>
+                <p style="font-size: 0.9rem;">
+                    CV Accuracy: {{ "%.2f%% ± %.2f%%"|format(results[0].cv_accuracy_mean * 100,
+                    results[0].cv_accuracy_std * 100) }}
+                </p>
                 {% else %}
-                    MSE: {{ res.mse }} <br>
-                    RMSE: {{ res.rmse }} <br>
-                    MAE: {{ res.mae }} <br>
-                    R² Score: {{ res.r2 }}
+                <p>Test R² Score:
+                    <strong style="color: var(--primary-color);">
+                        {{ "%.4f"|format(results[0].test_r2_score) }}
+                    </strong>
+                </p>
+                <p style="font-size: 0.9rem;">
+                    CV R²: {{ "%.4f ± %.4f"|format(results[0].cv_r2_mean, results[0].cv_r2_std) }}
+                </p>
                 {% endif %}
 
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+                <p style="font-size: 0.85rem; margin-top: 10px;">
+                    ⏱️ Total Time: <strong>{{ "%.2f"|format(results[0].total_time) }}s</strong>
+                </p>
+            </div>
+        </div>
+        {% endif %}
 
-<br>
-<a href="{{ url_for('home') }}">Upload New CSV</a>
+        <!-- Comparison Chart -->
+        <div class="glass-card mt-lg">
+            <h2>📊 Model Comparison (Test Set Performance)</h2>
+            <canvas id="comparisonChart"></canvas>
+        </div>
+
+        <!-- Timing Chart -->
+        <div class="glass-card mt-lg">
+            <h2>⏱️ Training Time Comparison</h2>
+            <canvas id="timingChart"></canvas>
+        </div>
+
+        <!-- Detailed Results -->
+        <h2 style="text-align:center; margin-top:40px;">📈 Detailed Model Results</h2>
+
+        {% for res in results %}
+        <div class="card mb-md">
+            <div class="card-header">
+                <h3>{{ res.model }}</h3>
+            </div>
+
+            {% if problem_type == 'classification' %}
+            <!-- CLASSIFICATION METRICS -->
+
+            <!-- Cross-Validation -->
+            <div style="background: rgba(102,126,234,0.1); padding: 15px; margin: 10px; border-radius: 8px;">
+                <h4 style="margin-top: 0;">📊 Cross-Validation ({{ res.train_samples }} samples)</h4>
+                <p><strong>CV Accuracy:</strong> {{ "%.2f%% ± %.2f%%"|format(res.cv_accuracy_mean * 100,
+                    res.cv_accuracy_std * 100) }}</p>
+            </div>
+
+            <!-- Train/Val/Test Comparison -->
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.2f%%"|format(res.train_accuracy * 100) }}</div>
+                    <div class="metric-label">Train Accuracy</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.2f%%"|format(res.val_accuracy * 100) }}</div>
+                    <div class="metric-label">Val Accuracy</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" style="color: var(--primary-color);">{{ "%.2f%%"|format(res.test_accuracy
+                        * 100) }}</div>
+                    <div class="metric-label">Test Accuracy ⭐</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value"
+                        style="color: {% if res.overfitting_gap > 0.1 %}#ff6b6b{% elif res.overfitting_gap > 0.05 %}#ffd93d{% else %}#6bcf7f{% endif %}">
+                        {{ "%.2f%%"|format(res.overfitting_gap * 100) }}
+                    </div>
+                    <div class="metric-label">Overfitting Gap</div>
+                </div>
+            </div>
+
+            <!-- Test Set Detailed Metrics -->
+            <h4 style="text-align: center; margin-top: 20px;">Test Set Metrics</h4>
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.4f"|format(res.test_precision) }}</div>
+                    <div class="metric-label">Precision</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.4f"|format(res.test_recall) }}</div>
+                    <div class="metric-label">Recall</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.4f"|format(res.test_f1_score) }}</div>
+                    <div class="metric-label">F1 Score</div>
+                </div>
+                {% if res.test_roc_auc %}
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.4f"|format(res.test_roc_auc) }}</div>
+                    <div class="metric-label">ROC-AUC</div>
+                </div>
+                {% endif %}
+                {% if res.test_pr_auc %}
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.4f"|format(res.test_pr_auc) }}</div>
+                    <div class="metric-label">PR-AUC</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Confusion Matrix -->
+            {% if res.confusion_matrix %}
+            <div style="margin: 20px 10px;">
+                <h4 style="text-align: center;">Confusion Matrix (Test Set)</h4>
+                <div style="overflow-x: auto;">
+                    <table style="margin: auto; border-collapse: collapse; min-width: 200px;">
+                        <thead>
+                            <tr style="background: rgba(102,126,234,0.2);">
+                                <th style="padding: 8px; border: 1px solid rgba(255,255,255,0.2);"></th>
+                                {% for i in range(res.confusion_matrix|length) %}
+                                <th style="padding: 8px; border: 1px solid rgba(255,255,255,0.2);">Pred {{ i }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in res.confusion_matrix %}
+                            <tr>
+                                <th
+                                    style="padding: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(102,126,234,0.2);">
+                                    True {{ loop.index0 }}</th>
+                                {% for val in row %}
+                                <td style="padding: 8px; border: 1px solid rgba(255,255,255,0.2); text-align: center;">
+                                    {{ val }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <!-- REGRESSION METRICS -->
+
+            <!-- Cross-Validation -->
+            <div style="background: rgba(102,126,234,0.1); padding: 15px; margin: 10px; border-radius: 8px;">
+                <h4 style="margin-top: 0;">📊 Cross-Validation ({{ res.train_samples }} samples)</h4>
+                <p><strong>CV R² Score:</strong> {{ "%.4f ± %.4f"|format(res.cv_r2_mean, res.cv_r2_std) }}</p>
+            </div>
+
+            <!-- Train/Val/Test Comparison -->
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.4f"|format(res.train_r2_score) }}</div>
+                    <div class="metric-label">Train R²</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.4f"|format(res.val_r2_score) }}</div>
+                    <div class="metric-label">Val R²</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" style="color: var(--primary-color);">{{ "%.4f"|format(res.test_r2_score)
+                        }}</div>
+                    <div class="metric-label">Test R² ⭐</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value"
+                        style="color: {% if res.overfitting_gap > 0.15 %}#ff6b6b{% elif res.overfitting_gap > 0.08 %}#ffd93d{% else %}#6bcf7f{% endif %}">
+                        {{ "%.4f"|format(res.overfitting_gap) }}
+                    </div>
+                    <div class="metric-label">Overfitting Gap</div>
+                </div>
+            </div>
+
+            <!-- Test Set Detailed Metrics -->
+            <h4 style="text-align: center; margin-top: 20px;">Test Set Error Metrics</h4>
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.4f"|format(res.test_mae) }}</div>
+                    <div class="metric-label">MAE</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.4f"|format(res.test_mse) }}</div>
+                    <div class="metric-label">MSE</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ "%.4f"|format(res.test_rmse) }}</div>
+                    <div class="metric-label">RMSE</div>
+                </div>
+            </div>
+
+            {% endif %}
+
+            <!-- Timing Information -->
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; margin: 10px; border-radius: 8px;">
+                <h4 style="margin-top: 0;">⏱️ Performance Timing</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    <div>
+                        <strong>Training:</strong> {{ "%.4f"|format(res.training_time) }}s
+                    </div>
+                    <div>
+                        <strong>CV:</strong> {{ "%.4f"|format(res.cv_time) }}s
+                    </div>
+                    <div>
+                        <strong>Val Prediction:</strong> {{ "%.4f"|format(res.val_prediction_time) }}s
+                    </div>
+                    <div>
+                        <strong>Test Prediction:</strong> {{ "%.4f"|format(res.test_prediction_time) }}s
+                    </div>
+                    <div>
+                        <strong>Preprocessing:</strong> {{ "%.4f"|format(res.preprocessing_time) }}s
+                    </div>
+                    <div style="color: var(--primary-color);">
+                        <strong>Total:</strong> {{ "%.4f"|format(res.total_time) }}s
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+
+        <!-- Back -->
+        <div style="text-align:center; margin-top:40px;">
+            <a href="{{ url_for('home') }}" class="btn btn-primary">📊 Upload New Dataset</a>
+        </div>
+
+    </div>
+
+    <script>
+        const results = {{ results | tojson }};
+        const type = "{{ problem_type }}";
+
+        // Comparison Chart
+        const labels = results.map(r => r.model);
+        const values = results.map(r =>
+            type === 'classification' ? r.test_accuracy : r.test_r2_score
+        );
+        const cvValues = results.map(r =>
+            type === 'classification' ? r.cv_accuracy_mean : r.cv_r2_mean
+        );
+
+        new Chart(
+            document.getElementById('comparisonChart'),
+            {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: type === 'classification' ? 'Test Accuracy' : 'Test R² Score',
+                            data: values,
+                            backgroundColor: 'rgba(102,126,234,0.8)',
+                            borderColor: 'rgba(102,126,234,1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: type === 'classification' ? 'CV Accuracy (mean)' : 'CV R² (mean)',
+                            data: cvValues,
+                            backgroundColor: 'rgba(107,207,127,0.6)',
+                            borderColor: 'rgba(107,207,127,1)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: type === 'classification' ? 1 : undefined
+                        }
+                    }
+                }
+            }
+        );
+
+        // Timing Chart
+        const timingLabels = results.map(r => r.model);
+        const timingValues = results.map(r => r.total_time);
+
+        new Chart(
+            document.getElementById('timingChart'),
+            {
+                type: 'bar',
+                data: {
+                    labels: timingLabels,
+                    datasets: [{
+                        label: 'Total Time (seconds)',
+                        data: timingValues,
+                        backgroundColor: 'rgba(255,107,107,0.8)',
+                        borderColor: 'rgba(255,107,107,1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            }
+        );
+    </script>
 
 </body>
+
 </html>

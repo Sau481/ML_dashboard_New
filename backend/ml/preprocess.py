@@ -1,31 +1,33 @@
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 
-def preprocess_data(df):
+def preprocess_data(X_train, X_test):
+    numeric_features = X_train.select_dtypes(include=['int64', 'float64']).columns
+    categorical_features = X_train.select_dtypes(include=['object']).columns
 
-    # Auto-select last column as target
-    target = df.columns[-1]
+    numeric_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='mean')),
+        ('scaler', StandardScaler())
+    ])
 
-    X = df.drop(columns=[target])
-    y = df[target]
+    categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+    ])
 
-    # Encode categorical
-    for col in X.columns:
-        if X[col].dtype == 'object':
-            X[col] = LabelEncoder().fit_transform(X[col].astype(str))
-
-    # Encode target if categorical
-    if y.dtype == 'object':
-        y = LabelEncoder().fit_transform(y.astype(str))
-
-    # Scale numerical
-    scaler = StandardScaler()
-    X = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
-
-    # Split
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features),
+            ('cat', categorical_transformer, categorical_features)
+        ],
+        remainder='passthrough'
     )
 
-    return X_train, X_test, y_train, y_test, target
+    # Fit on training data and transform both training and testing data
+    X_train_processed = preprocessor.fit_transform(X_train)
+    X_test_processed = preprocessor.transform(X_test)
+
+    return X_train_processed, X_test_processed, preprocessor
