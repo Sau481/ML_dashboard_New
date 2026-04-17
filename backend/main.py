@@ -46,31 +46,33 @@ def basic_overview(df):
         "sample": df.head(5).to_dict(orient="records")
     }
 
-def detect_problem_type(df, target_column):
+def detect_problem_type(y):
     """
     Smart detection of problem type (classification vs regression)
     
     Args:
-        df: DataFrame
-        target_column: Name of the target column
+        y: Series or array-like target values
     
     Returns:
-        tuple: (detected_type, unique_count, is_numeric)
+        tuple: (detected_type, reason)
     """
-    target_series = df[target_column]
-    unique_count = target_series.nunique()
-    is_numeric = pd.api.types.is_numeric_dtype(target_series)
+    # Ensure y is a pandas Series
+    if not isinstance(y, pd.Series):
+        y = pd.Series(y)
     
-    # Rule 1: If it's object/categorical type, it's classification
-    if target_series.dtype == 'object' or pd.api.types.is_categorical_dtype(target_series):
-        return 'classification', unique_count, False
+    unique_count = y.nunique()
+    is_numeric = pd.api.types.is_numeric_dtype(y)
     
-    # Rule 2: If numeric with <= 20 unique values, likely classification
-    if is_numeric and unique_count <= 20:
-        return 'classification', unique_count, True
+    # Rule 1: If it's object or categorical type, it's classification
+    if not is_numeric:
+        return 'classification', f"Target column is non-numeric (type: {y.dtype})"
+    
+    # Rule 2: If numeric with <= 20 unique values, treat as classification
+    if unique_count <= 20:
+        return 'classification', f"Target is numeric but has only {unique_count} unique values (suggests categories)"
     
     # Rule 3: Otherwise, it's regression
-    return 'regression', unique_count, is_numeric
+    return 'regression', f"Target is numeric and has many ({unique_count}) unique values"
 
 # ========================================================
 # -------------------- ROUTES ----------------------------
@@ -98,11 +100,10 @@ def upload():
     # Add column metadata for auto-detection
     column_metadata = {}
     for col in df.columns:
-        detected_type, unique_count, is_numeric = detect_problem_type(df, col)
+        detected_type, reason = detect_problem_type(df[col])
         column_metadata[col] = {
             'detected_type': detected_type,
-            'unique_count': unique_count,
-            'is_numeric': is_numeric
+            'reason': reason
         }
 
     return render_template("select_target.html",
@@ -123,7 +124,7 @@ def train():
         problem_type = manual_problem_type
     else:
         # Smart auto-detection
-        detected_type, _, _ = detect_problem_type(df, target)
+        detected_type, _ = detect_problem_type(df[target])
         problem_type = detected_type
 
     try:

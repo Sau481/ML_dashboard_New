@@ -1,0 +1,27 @@
+I am building an ML dashboard in Python (Flask/Streamlit) where users select a target column, and the system auto-detects whether the problem is classification or regression.
+
+Currently, the detection is incorrect. For example, when the target column contains categorical values like "Species" in the Iris dataset, the system incorrectly detects it as regression.
+
+Fix the problem type detection logic so that:
+
+If the target column is of type object or categorical → classify as "classification"
+If the target is numeric but has a small number of unique values (e.g., ≤ 20) → treat it as "classification"
+If the target is numeric and has many unique values → treat it as "regression"
+
+Requirements:
+
+Use pandas for dtype checking
+Handle edge cases like numeric labels (0,1,2) correctly
+Return both:
+detected problem type ("classification" or "regression")
+reason for detection (for UI display)
+Write clean, reusable function like:
+detect_problem_type(y)
+
+Also ensure the logic does not get overridden elsewhere in the code.
+
+Provide:
+
+Final corrected function
+Example usage with Iris dataset
+Brief explanation of logic

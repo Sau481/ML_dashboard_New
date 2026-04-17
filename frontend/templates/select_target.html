@@ -216,16 +216,8 @@
           const detectedProblemType = metadata.detected_type;
           detectedType.textContent = detectedProblemType.charAt(0).toUpperCase() + detectedProblemType.slice(1);
 
-          // Show detection reason
-          let reason = '';
-          if (!metadata.is_numeric) {
-            reason = 'Target contains text/categorical values';
-          } else if (metadata.unique_count <= 20) {
-            reason = `Target has ${metadata.unique_count} unique values (≤20)`;
-          } else {
-            reason = `Target has ${metadata.unique_count} unique values (\u003e20)`;
-          }
-          detectionReason.textContent = reason;
+          // Show detection reason from backend
+          detectionReason.textContent = metadata.reason;
 
           // Pre-select the auto-detected type
           if (detectedProblemType === 'classification') {
