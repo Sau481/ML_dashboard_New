@@ -3,3 +3,23 @@ venv/
 VENV/
 .env/
 .venv/
+
+# Ignore compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore user uploads and results
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/results/*
+!backend/results/.gitkeep
+
+# Ignore datasets (if any)
+*.csv
+!challenging_dataset.csv
+
+# Ignore IDE/OS files
+.vscode/
+.idea/
+.DS_Store

@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 import time
-from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold, KFold
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 from .preprocess import preprocess_data
 from .models import get_models
 from .evaluator import evaluate_model
@@ -19,9 +20,19 @@ def detect_dataset_size(df):
     else:
         return 'large'
 
+def get_feature_names(preprocessor, X):
+    """Helper to get feature names after preprocessing"""
+    try:
+        if hasattr(preprocessor, 'get_feature_names_out'):
+            return preprocessor.get_feature_names_out().tolist()
+        return [f"Feature {i}" for i in range(X.shape[1])]
+    except Exception:
+        # Fallback if get_feature_names_out fails
+        return [f"Feature {i}" for i in range(X.shape[1])]
+
 def train_and_evaluate_models(df, target_column, problem_type):
     """
-    Train and evaluate multiple models with proper validation and timing
+    Train and evaluate multiple models with production-level best practices
     
     Args:
         df: Input dataframe
@@ -29,7 +40,7 @@ def train_and_evaluate_models(df, target_column, problem_type):
         problem_type: 'classification' or 'regression'
     
     Returns:
-        results: List of model evaluation results with timing
+        results: List of model evaluation results
         preprocessor: Fitted preprocessing pipeline
     """
     start_time = time.time()
@@ -40,40 +51,36 @@ def train_and_evaluate_models(df, target_column, problem_type):
     X = df.drop(columns=[target_column])
     y = df[target_column]
     
-    # Use stratified split for classification to maintain class distribution
+    # Encode target labels if classification and non-numeric
+    label_encoder = None
     if problem_type == 'classification':
-        X_train, X_temp, y_train, y_temp = train_test_split(
-            X, y, test_size=0.4, random_state=42, stratify=y
+        if y.dtype == 'object' or not pd.api.types.is_integer_dtype(y):
+            label_encoder = LabelEncoder()
+            y = label_encoder.fit_transform(y)
+            print(f"Encoded target labels: {dict(zip(label_encoder.classes_, label_encoder.transform(label_encoder.classes_)))}")
+
+    # Strict train/test split (80/20)
+    if problem_type == 'classification':
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
         )
-        X_val, X_test, y_val, y_test = train_test_split(
-            X_temp, y_temp, test_size=0.5, random_state=42, stratify=y_temp
-        )
+        n_folds = 5 if dataset_size != 'small' else 3
     else:
-        X_train, X_temp, y_train, y_temp = train_test_split(
-            X, y, test_size=0.4, random_state=42
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
         )
-        X_val, X_test, y_val, y_test = train_test_split(
-            X_temp, y_temp, test_size=0.5, random_state=42
-        )
+        n_folds = 5 if dataset_size != 'small' else 3
     
-    # Preprocess data
+    # Preprocess data (Fit on TRAIN only to avoid leakage)
     preprocess_start = time.time()
-    X_train_processed, X_val_processed, preprocessor = preprocess_data(X_train, X_val)
-    X_test_processed = preprocessor.transform(X_test)
+    X_train_processed, X_test_processed, preprocessor = preprocess_data(X_train, X_test)
     preprocess_time = time.time() - preprocess_start
+    
+    # Get feature names for importance analysis
+    feature_names = get_feature_names(preprocessor, X_train_processed)
     
     # Get models based on dataset size
     models = get_models(problem_type, dataset_size)
-    
-    # Determine number of CV folds based on dataset size
-    if dataset_size == 'small':
-        n_folds = min(3, len(X_train) // 10)  # At least 10 samples per fold
-    elif dataset_size == 'medium':
-        n_folds = 5
-    else:
-        n_folds = 3  # Fewer folds for large datasets to save time
-    
-    n_folds = max(2, n_folds)  # At least 2 folds
     
     # Evaluate models in parallel
     results = Parallel(n_jobs=-1)(
@@ -82,36 +89,35 @@ def train_and_evaluate_models(df, target_column, problem_type):
             model, 
             X_train_processed, 
             y_train, 
-            X_val_processed, 
-            y_val,
             X_test_processed, 
             y_test, 
             problem_type,
-            n_folds,
-            dataset_size
+            feature_names,
+            n_folds
         )
         for name, model in models.items()
     )
     
-    # Add preprocessing time to results
+    # Post-process results
     for result in results:
         result['preprocessing_time'] = round(preprocess_time, 4)
         result['dataset_size'] = dataset_size
         result['train_samples'] = len(X_train)
-        result['val_samples'] = len(X_val)
         result['test_samples'] = len(X_test)
+        result['val_samples'] = 0  # Placeholder for UI
     
-    # Sort results by the primary metric
-    if problem_type == 'classification':
-        results.sort(key=lambda x: x.get('test_accuracy', 0), reverse=True)
-    else:
-        results.sort(key=lambda x: x.get('test_r2_score', 0), reverse=True)
+    # Best model selection logic based on CV score
+    results.sort(key=lambda x: x.get('cv_score_mean', 0), reverse=True)
     
+    if results:
+        for i, r in enumerate(results):
+            r['is_best'] = (i == 0)
+
     total_time = time.time() - start_time
     print(f"\n{'='*60}")
+    print(f"Pipeline Upgrade Complete")
     print(f"Total execution time: {total_time:.2f} seconds")
-    print(f"Dataset size category: {dataset_size}")
-    print(f"Train/Val/Test split: {len(X_train)}/{len(X_val)}/{len(X_test)}")
+    print(f"Best Model: {results[0]['model']} (CV Score: {results[0]['cv_score_mean']})")
     print(f"{'='*60}\n")
     
     return results, preprocessor

@@ -9,8 +9,7 @@ def preprocess_data(X_train, X_test):
     categorical_features = X_train.select_dtypes(include=['object']).columns
 
     numeric_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='mean')),
-        ('scaler', StandardScaler())
+        ('imputer', SimpleImputer(strategy='mean'))
     ])
 
     categorical_transformer = Pipeline(steps=[
