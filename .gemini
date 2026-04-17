@@ -1,27 +1,162 @@
-I am building an ML dashboard in Python (Flask/Streamlit) where users select a target column, and the system auto-detects whether the problem is classification or regression.
+I have built an ML Dashboard project with a Flask backend and HTML/JS frontend. Before pushing to GitHub, I want a COMPLETE and STRICT code review to ensure everything is correct, production-ready, and free from hidden bugs.
 
-Currently, the detection is incorrect. For example, when the target column contains categorical values like "Species" in the Iris dataset, the system incorrectly detects it as regression.
+Project structure:
 
-Fix the problem type detection logic so that:
+backend/
+├── main.py
+├── ml/
+│   ├── models.py
+│   ├── trainer.py
+│   ├── preprocess.py
+│   ├── evaluator.py
+├── results/
+├── uploads/
 
-If the target column is of type object or categorical → classify as "classification"
-If the target is numeric but has a small number of unique values (e.g., ≤ 20) → treat it as "classification"
-If the target is numeric and has many unique values → treat it as "regression"
+frontend/
+├── templates/
+├── static/
 
-Requirements:
+---
 
-Use pandas for dtype checking
-Handle edge cases like numeric labels (0,1,2) correctly
-Return both:
-detected problem type ("classification" or "regression")
-reason for detection (for UI display)
-Write clean, reusable function like:
-detect_problem_type(y)
+### 🔍 Perform FULL SYSTEM VERIFICATION
 
-Also ensure the logic does not get overridden elsewhere in the code.
+#### 1. ML Pipeline Correctness
 
-Provide:
+* Ensure NO data leakage:
 
-Final corrected function
-Example usage with Iris dataset
-Brief explanation of logic
+  * Train/test split before transformations
+  * Scaling only inside pipelines
+* Verify:
+
+  * Models trained only on training data
+  * Evaluation done only on test data
+* Check cross-validation:
+
+  * StratifiedKFold for classification
+  * KFold for regression
+
+---
+
+#### 2. Model Configuration
+
+* Verify:
+
+  * Proper use of Pipeline (scaling where needed)
+  * Correct GradientBoosting parameters
+  * RandomForest not overfitting excessively
+  * class_weight used where applicable
+  * random_state used consistently
+* Check XGBoost integration and compatibility
+
+---
+
+#### 3. Evaluation Logic
+
+* Classification:
+
+  * Accuracy, Precision, Recall, F1, ROC-AUC correct
+  * Confusion matrix correct
+* Regression:
+
+  * R², MAE, RMSE correct
+* Ensure metrics are calculated on correct datasets
+
+---
+
+#### 4. Dataset Validation Layer
+
+* Check:
+
+  * No target leakage
+  * Target column not included in features
+  * High correlation detection implemented (warning only, not forced removal)
+* Ensure original dataset remains unchanged
+
+---
+
+#### 5. Trainer Logic
+
+* Ensure:
+
+  * Proper dataset splitting
+  * No reuse of test data in training
+  * Structured output for all models
+  * Best model selected based on CV score (not test score)
+
+---
+
+#### 6. Frontend ↔ Backend Sync
+
+* Verify:
+
+  * API routes match frontend calls
+  * JSON keys match between backend response and frontend usage
+  * Data flows correctly:
+    Upload → Target selection → Training → Results
+* Check for:
+
+  * Broken UI flows
+  * Missing or mismatched data fields
+
+---
+
+#### 7. Error Handling
+
+* Ensure:
+
+  * Backend handles invalid datasets gracefully
+  * Frontend displays meaningful error messages
+  * No crashes on bad input
+
+---
+
+#### 8. Performance & Deployment Safety
+
+* Ensure:
+
+  * No heavy computation (like GridSearch) runs unintentionally on request
+  * Code is safe for deployment (e.g., Render)
+  * No hardcoded paths (use relative paths)
+  * No localhost-only URLs
+
+---
+
+#### 9. File & Dependency Check
+
+* Ensure:
+
+  * requirements.txt includes all dependencies (scikit-learn, xgboost, etc.)
+  * No unused imports
+  * No missing modules
+* Verify:
+
+  * .gitignore excludes venv, uploads, and model files
+
+---
+
+#### 10. Code Quality
+
+* Check:
+
+  * Clean structure and modularity
+  * Readable function names
+  * No redundant code
+  * Proper comments where needed
+
+---
+
+### 📦 Output Required
+
+* List of ALL issues found (if any)
+* Categorize issues:
+
+  * Critical (must fix)
+  * Warning (should fix)
+  * Minor (optional)
+* Provide exact fixes with code snippets
+* Final verdict:
+
+  * "Ready for GitHub" or
+  * "Needs fixes before pushing"
+
+Be strict and assume there may be hidden issues. Do not skip any checks.
