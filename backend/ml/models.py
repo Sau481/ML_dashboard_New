@@ -17,15 +17,15 @@ def with_scaling(model):
 def get_models(problem_type, dataset_size='medium'):
     """
     Get models with configurations optimized for dataset size and production best practices
-    
+
     Args:
         problem_type: 'classification' or 'regression'
         dataset_size: 'small' (<1000), 'medium' (1000-10000), or 'large' (>10000)
-    
+
     Returns:
         Dictionary of model instances
     """
-    
+
     if problem_type == 'classification':
         if dataset_size == 'small':
             return {
@@ -54,7 +54,7 @@ def get_models(problem_type, dataset_size='medium'):
                 'KNN': with_scaling(KNeighborsClassifier(n_neighbors=10, n_jobs=-1)),
                 'XGBoost': XGBClassifier(n_estimators=200, max_depth=7, learning_rate=0.05, random_state=42, use_label_encoder=False, eval_metric='logloss', n_jobs=-1)
             }
-    
+
     else:  # regression
         if dataset_size == 'small':
             return {
