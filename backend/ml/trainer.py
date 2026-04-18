@@ -3,7 +3,7 @@ import numpy as np
 import time
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from .preprocess import preprocess_data
+from .preprocess import preprocess_data, remove_id_columns
 from .models import get_models
 from .evaluator import evaluate_model
 from joblib import Parallel, delayed
