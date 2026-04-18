@@ -62,7 +62,7 @@ def get_models(problem_type, dataset_size='medium'):
                 'Ridge': with_scaling(Ridge(alpha=1.0, random_state=42)),
                 'Lasso': with_scaling(Lasso(alpha=1.0, max_iter=1000, random_state=42)),
                 'Decision Tree': DecisionTreeRegressor(max_depth=5, min_samples_split=10, min_samples_leaf=5, random_state=42),
-                'Random Forest': RandomForestRegressor(n_estimators=50, max_depth=5, min_samples_leaf=5, random_state=42),
+                'Random Forest': RandomForestRegressor(n_estimators=100, max_depth=10, min_samples_leaf=2, random_state=42),
                 'KNN': with_scaling(KNeighborsRegressor(n_neighbors=5)),
                 'XGBoost': XGBRegressor(n_estimators=50, max_depth=3, learning_rate=0.1, random_state=42)
             }
@@ -84,7 +84,7 @@ def get_models(problem_type, dataset_size='medium'):
                 'Ridge': with_scaling(Ridge(alpha=1.0, random_state=42)),
                 'Lasso': with_scaling(Lasso(alpha=1.0, max_iter=500, random_state=42)),
                 'Decision Tree': DecisionTreeRegressor(max_depth=15, min_samples_split=20, random_state=42),
-                'Random Forest': RandomForestRegressor(n_estimators=200, max_depth=15, min_samples_leaf=1, n_jobs=-1, random_state=42),
+                'Random Forest': RandomForestRegressor(n_estimators=150, max_depth=15, min_samples_leaf=1, n_jobs=-1, random_state=42),
                 'Gradient Boosting': GradientBoostingRegressor(n_estimators=200, max_depth=5, learning_rate=0.05, random_state=42),
                 'KNN': with_scaling(KNeighborsRegressor(n_neighbors=10, n_jobs=-1)),
                 'XGBoost': XGBRegressor(n_estimators=200, max_depth=7, learning_rate=0.05, random_state=42, n_jobs=-1)

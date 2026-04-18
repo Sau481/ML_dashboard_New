@@ -1,162 +1,59 @@
-I have built an ML Dashboard project with a Flask backend and HTML/JS frontend. Before pushing to GitHub, I want a COMPLETE and STRICT code review to ensure everything is correct, production-ready, and free from hidden bugs.
-
-Project structure:
-
-backend/
-├── main.py
-├── ml/
-│   ├── models.py
-│   ├── trainer.py
-│   ├── preprocess.py
-│   ├── evaluator.py
-├── results/
-├── uploads/
-
-frontend/
-├── templates/
-├── static/
+I have an ML pipeline where the user selects a target column from a dataset. I want you to VERIFY that the feature-target split is implemented correctly.
 
 ---
 
-### 🔍 Perform FULL SYSTEM VERIFICATION
+### 🎯 Objective
 
-#### 1. ML Pipeline Correctness
+Ensure that after selecting the target column:
 
-* Ensure NO data leakage:
-
-  * Train/test split before transformations
-  * Scaling only inside pipelines
-* Verify:
-
-  * Models trained only on training data
-  * Evaluation done only on test data
-* Check cross-validation:
-
-  * StratifiedKFold for classification
-  * KFold for regression
+* The target variable (y) contains ONLY the selected column
+* The feature set (X) contains ALL remaining columns
+* The target column is NOT included in X
 
 ---
 
-#### 2. Model Configuration
+### 🔍 What to check
 
-* Verify:
+1. Verify correct splitting logic:
 
-  * Proper use of Pipeline (scaling where needed)
-  * Correct GradientBoosting parameters
-  * RandomForest not overfitting excessively
-  * class_weight used where applicable
-  * random_state used consistently
-* Check XGBoost integration and compatibility
+   * y = df[target_column]
+   * X = df.drop(columns=[target_column])
 
----
+2. Ensure:
 
-#### 3. Evaluation Logic
+   * Target column is completely removed from features
+   * No accidental inclusion of target in X
 
-* Classification:
+3. Confirm:
 
-  * Accuracy, Precision, Recall, F1, ROC-AUC correct
-  * Confusion matrix correct
-* Regression:
+   * All other columns are included in X
+   * No columns are unintentionally dropped
 
-  * R², MAE, RMSE correct
-* Ensure metrics are calculated on correct datasets
+4. Check for bugs like:
 
----
-
-#### 4. Dataset Validation Layer
-
-* Check:
-
-  * No target leakage
-  * Target column not included in features
-  * High correlation detection implemented (warning only, not forced removal)
-* Ensure original dataset remains unchanged
-
----
-
-#### 5. Trainer Logic
-
-* Ensure:
-
-  * Proper dataset splitting
-  * No reuse of test data in training
-  * Structured output for all models
-  * Best model selected based on CV score (not test score)
-
----
-
-#### 6. Frontend ↔ Backend Sync
-
-* Verify:
-
-  * API routes match frontend calls
-  * JSON keys match between backend response and frontend usage
-  * Data flows correctly:
-    Upload → Target selection → Training → Results
-* Check for:
-
-  * Broken UI flows
-  * Missing or mismatched data fields
-
----
-
-#### 7. Error Handling
-
-* Ensure:
-
-  * Backend handles invalid datasets gracefully
-  * Frontend displays meaningful error messages
-  * No crashes on bad input
-
----
-
-#### 8. Performance & Deployment Safety
-
-* Ensure:
-
-  * No heavy computation (like GridSearch) runs unintentionally on request
-  * Code is safe for deployment (e.g., Render)
-  * No hardcoded paths (use relative paths)
-  * No localhost-only URLs
-
----
-
-#### 9. File & Dependency Check
-
-* Ensure:
-
-  * requirements.txt includes all dependencies (scikit-learn, xgboost, etc.)
-  * No unused imports
-  * No missing modules
-* Verify:
-
-  * .gitignore excludes venv, uploads, and model files
-
----
-
-#### 10. Code Quality
-
-* Check:
-
-  * Clean structure and modularity
-  * Readable function names
-  * No redundant code
-  * Proper comments where needed
+   * Using full dataframe as X
+   * Dropping wrong column
+   * Incorrect variable assignment
 
 ---
 
 ### 📦 Output Required
 
-* List of ALL issues found (if any)
-* Categorize issues:
+* Confirm whether splitting is correct or not
+* If incorrect:
 
-  * Critical (must fix)
-  * Warning (should fix)
-  * Minor (optional)
-* Provide exact fixes with code snippets
-* Final verdict:
+  * Identify the exact issue
+  * Provide corrected code snippet
+* Brief explanation of the fix
 
-  * "Ready for GitHub" or
-  * "Needs fixes before pushing"
+---
 
-Be strict and assume there may be hidden issues. Do not skip any checks.
+### ⚠️ Important
+
+* Do NOT modify overall pipeline logic
+* Focus ONLY on feature-target splitting correctness
+* Keep the fix minimal and precise
+
+---
+
+Here is my code:
