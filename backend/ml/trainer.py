@@ -48,10 +48,11 @@ def prepare_data(df, target_column, problem_type):
     df = df.drop(columns=id_cols)
     
     # 2. Remove columns where all values are unique (likely IDs or high-cardinality noise)
+    # Optimization: Only consider non-float columns to avoid dropping valid continuous features
     high_cardinality_cols = []
     for col in df.columns:
         if col != target_column:
-            if df[col].nunique() == len(df):
+            if df[col].nunique() == len(df) and not pd.api.types.is_float_dtype(df[col]):
                 high_cardinality_cols.append(col)
     
     df = df.drop(columns=high_cardinality_cols)

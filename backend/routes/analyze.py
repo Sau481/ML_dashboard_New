@@ -27,9 +27,12 @@ async def analyze_model(request: AnalyzeRequest):
     if request.target not in df.columns:
         raise HTTPException(status_code=400, detail=f"Target column '{request.target}' not found")
         
-    # 1. Detect problem type
-    # We use the target column to detect problem type consistently
-    problem_type, _ = detect_problem_type(df[request.target])
+    # 1. Detect or use provided problem type
+    if request.problem_type:
+        problem_type = request.problem_type
+    else:
+        # We use the target column to detect problem type consistently
+        problem_type, _ = detect_problem_type(df[request.target])
     
     # 2. Reuse standardized preparation logic
     X_train_processed, X_test_processed, y_train, y_test, preprocessor, dataset_size = \

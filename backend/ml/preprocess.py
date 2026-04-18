@@ -45,7 +45,7 @@ def preprocess_data(X_train, X_test):
 
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
-        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
     ])
 
     preprocessor = ColumnTransformer(

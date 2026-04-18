@@ -359,10 +359,13 @@
     async function handleSingleModelAnalysis() {
         const overlay = MLDashboard.createLoadingOverlay('Analyzing model, generating graphs...');
         
+        const problemType = classificationRadio.checked ? 'classification' : 'regression';
+        
         const payload = {
             file_path: currentFilePath,
             target: targetSelect.value,
             model_name: modelNameSelect.value,
+            problem_type: problemType,
             mode: 'single'
         };
 

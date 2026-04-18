@@ -187,7 +187,10 @@ def evaluate_classification(model_name, model, X_train, y_train, X_test, y_test,
             if y_test_proba.shape[1] == 2:
                 y_score = y_test_proba[:, 1]
                 test_roc_auc = roc_auc_score(y_test, y_score)
-                test_pr_auc = average_precision_score(y_test, y_score)
+                try:
+                    test_pr_auc = average_precision_score(y_test, y_score)
+                except:
+                    test_pr_auc = None
                 
                 # Curve data
                 fpr, tpr, _ = roc_curve(y_test, y_score)
@@ -205,8 +208,12 @@ def evaluate_classification(model_name, model, X_train, y_train, X_test, y_test,
                 }
             else:
                 # Multiclass - use OvR
-                test_roc_auc = roc_auc_score(y_test, y_test_proba, multi_class='ovr')
-                test_pr_auc = average_precision_score(y_test, y_test_proba, average='weighted')
+                try:
+                    test_roc_auc = roc_auc_score(y_test, y_test_proba, multi_class='ovr')
+                    test_pr_auc = average_precision_score(y_test, y_test_proba, average='weighted')
+                except:
+                    test_roc_auc = None
+                    test_pr_auc = None
         except Exception:
             pass
     

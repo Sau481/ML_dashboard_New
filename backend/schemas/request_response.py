@@ -77,6 +77,12 @@ class AnalyzeRequest(BaseModel):
     file_path: str
     target: str
     model_name: str
+    problem_type: Optional[str] = None
+    mode: Optional[str] = None
+    
+    model_config = {
+        "protected_namespaces": ()
+    }
 
 class AnalyzeResponse(BaseModel):
     model: str
