@@ -56,6 +56,13 @@ class ModelResult(BaseModel):
     val_samples: int
     is_best: bool
     feature_importance: Optional[Dict[str, float]] = None
+    
+    # Visualization Data
+    roc_curve: Optional[Dict[str, Any]] = None
+    pr_curve: Optional[Dict[str, Any]] = None
+    residual_plot: Optional[Dict[str, Any]] = None
+    actual_vs_predicted: Optional[Dict[str, Any]] = None
+    learning_curve: Optional[Dict[str, Any]] = None
 
 class TrainResponse(BaseModel):
     results: List[ModelResult]

@@ -1,59 +1,66 @@
-I have an ML pipeline where the user selects a target column from a dataset. I want you to VERIFY that the feature-target split is implemented correctly.
+I have an ML Dashboard project using FastAPI backend and HTML/JS frontend. Currently, graphs are generated using matplotlib and sent as base64 images.
 
----
+I want to UPGRADE the visualization layer to interactive charts using Chart.js WITHOUT changing my ML logic, pipeline, or model outputs.
 
-### 🎯 Objective
 
-Ensure that after selecting the target column:
+🎯 Objective
+Replace static matplotlib graphs with interactive Chart.js graphs
+Keep backend ML logic unchanged
+Only modify how graph data is returned and rendered
 
-* The target variable (y) contains ONLY the selected column
-* The feature set (X) contains ALL remaining columns
-* The target column is NOT included in X
+🚨 STRICT RULES
+DO NOT change model training or evaluation logic
+DO NOT change preprocessing or pipelines
+DO NOT change metrics calculation
+ONLY replace visualization layer
 
----
+🔧 BACKEND CHANGES
+Instead of returning base64 images, return structured JSON for graphs:
+Example:
 
-### 🔍 What to check
+{
+"roc_curve": {
+"fpr": [...],
+"tpr": [...],
+"auc": 0.995
+}
+}
 
-1. Verify correct splitting logic:
+Do this for:
+Confusion Matrix → matrix values
+ROC Curve → fpr, tpr, auc
+PR Curve → precision, recall
+Residual Plot → y_pred, residuals
+Actual vs Predicted → y_true, y_pred
+Learning Curve → train_sizes, train_scores, val_scores
 
-   * y = df[target_column]
-   * X = df.drop(columns=[target_column])
+🎨 FRONTEND CHANGES
+Use Chart.js (CDN):
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-2. Ensure:
+Replace graphs with elements
+Create reusable JS functions to render charts
 
-   * Target column is completely removed from features
-   * No accidental inclusion of target in X
+🎨 DESIGN REQUIREMENTS
+Use theme colors:
 
-3. Confirm:
+Primary: #667eea
+Accent: #f5576c
+Success: #00f2fe
+Charts must include:
 
-   * All other columns are included in X
-   * No columns are unintentionally dropped
+Smooth lines
+Tooltips
+Legends
+Responsive layout
 
-4. Check for bugs like:
+📦 OUTPUT REQUIRED
+Updated backend response format (JSON graphs)
+Frontend JS functions for Chart.js
+Canvas-based rendering replacing images
+No breaking changes to existing APIs
 
-   * Using full dataframe as X
-   * Dropping wrong column
-   * Incorrect variable assignment
+⚠️ IMPORTANT
+This is a visualization upgrade only.
 
----
-
-### 📦 Output Required
-
-* Confirm whether splitting is correct or not
-* If incorrect:
-
-  * Identify the exact issue
-  * Provide corrected code snippet
-* Brief explanation of the fix
-
----
-
-### ⚠️ Important
-
-* Do NOT modify overall pipeline logic
-* Focus ONLY on feature-target splitting correctness
-* Keep the fix minimal and precise
-
----
-
-Here is my code:
+Preserve all existing ML functionality.

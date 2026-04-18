@@ -234,6 +234,62 @@
 
             {% endif %}
 
+            <!-- VISUALIZATIONS -->
+            <h4 style="text-align: center; margin-top: 30px;">📈 Model Visualizations</h4>
+            <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+                
+                <!-- Learning Curve (Common) -->
+                {% if res.learning_curve %}
+                <div class="metric-item" style="height: 300px; display: block;">
+                    <h5 style="margin-bottom: 10px;">Learning Curve</h5>
+                    <canvas id="lc-{{ loop.index }}"></canvas>
+                </div>
+                {% endif %}
+
+                {% if problem_type == 'classification' %}
+                    <!-- Confusion Matrix -->
+                    {% if res.confusion_matrix %}
+                    <div class="metric-item" style="height: 300px; display: block;">
+                        <h5 style="margin-bottom: 10px;">Confusion Matrix</h5>
+                        <canvas id="cm-{{ loop.index }}"></canvas>
+                    </div>
+                    {% endif %}
+
+                    <!-- ROC Curve -->
+                    {% if res.roc_curve %}
+                    <div class="metric-item" style="height: 300px; display: block;">
+                        <h5 style="margin-bottom: 10px;">ROC Curve (AUC: {{ res.roc_curve.auc }})</h5>
+                        <canvas id="roc-{{ loop.index }}"></canvas>
+                    </div>
+                    {% endif %}
+
+                    <!-- PR Curve -->
+                    {% if res.pr_curve %}
+                    <div class="metric-item" style="height: 300px; display: block;">
+                        <h5 style="margin-bottom: 10px;">PR Curve (AUC: {{ res.pr_curve.auc }})</h5>
+                        <canvas id="pr-{{ loop.index }}"></canvas>
+                    </div>
+                    {% endif %}
+
+                {% else %}
+                    <!-- Residual Plot -->
+                    {% if res.residual_plot %}
+                    <div class="metric-item" style="height: 300px; display: block;">
+                        <h5 style="margin-bottom: 10px;">Residual Plot</h5>
+                        <canvas id="rp-{{ loop.index }}"></canvas>
+                    </div>
+                    {% endif %}
+
+                    <!-- Actual vs Predicted -->
+                    {% if res.actual_vs_predicted %}
+                    <div class="metric-item" style="height: 300px; display: block;">
+                        <h5 style="margin-bottom: 10px;">Actual vs Predicted</h5>
+                        <canvas id="avp-{{ loop.index }}"></canvas>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+
             <!-- Timing Information -->
             <div style="background: rgba(255,255,255,0.05); padding: 15px; margin: 10px; border-radius: 8px;">
                 <h4 style="margin-top: 0;">⏱️ Performance Timing</h4>
@@ -343,6 +399,190 @@
                 }
             }
         );
+
+        // Detailed Visualizations for each model
+        results.forEach((res, index) => {
+            const idx = index + 1;
+
+            // Learning Curve
+            if (res.learning_curve) {
+                new Chart(document.getElementById(`lc-${idx}`), {
+                    type: 'line',
+                    data: {
+                        labels: res.learning_curve.train_sizes,
+                        datasets: [
+                            {
+                                label: 'Train Score',
+                                data: res.learning_curve.train_scores,
+                                borderColor: '#667eea',
+                                tension: 0.3,
+                                fill: false
+                            },
+                            {
+                                label: 'Val Score',
+                                data: res.learning_curve.val_scores,
+                                borderColor: '#00f2fe',
+                                tension: 0.3,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            if (type === 'classification') {
+                // Confusion Matrix (Heatmap-like)
+                if (res.confusion_matrix) {
+                    const cmData = [];
+                    res.confusion_matrix.forEach((row, i) => {
+                        row.forEach((val, j) => {
+                            cmData.push({ x: j, y: i, v: val });
+                        });
+                    });
+
+                    new Chart(document.getElementById(`cm-${idx}`), {
+                        type: 'bubble',
+                        data: {
+                            datasets: [{
+                                label: 'Matrix Values',
+                                data: cmData.map(d => ({ x: d.x, y: d.y, r: Math.log1p(d.v) * 5 })),
+                                backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                                borderColor: '#667eea'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { title: { display: true, text: 'Predicted' }, min: -0.5, max: res.confusion_matrix.length - 0.5 },
+                                y: { title: { display: true, text: 'True' }, min: -0.5, max: res.confusion_matrix.length - 0.5 }
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => `True: ${ctx.raw.y}, Pred: ${ctx.raw.x}, Count: ${cmData[ctx.dataIndex].v}`
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // ROC Curve
+                if (res.roc_curve) {
+                    new Chart(document.getElementById(`roc-${idx}`), {
+                        type: 'line',
+                        data: {
+                            labels: res.roc_curve.fpr,
+                            datasets: [{
+                                label: 'ROC Curve',
+                                data: res.roc_curve.tpr,
+                                borderColor: '#f5576c',
+                                borderWeight: 2,
+                                tension: 0.1,
+                                fill: true,
+                                backgroundColor: 'rgba(245, 87, 108, 0.1)'
+                            }, {
+                                label: 'Random',
+                                data: [0, 1],
+                                borderColor: 'gray',
+                                borderDash: [5, 5],
+                                fill: false,
+                                pointRadius: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { title: { display: true, text: 'False Positive Rate' }, type: 'linear', position: 'bottom', min: 0, max: 1 },
+                                y: { title: { display: true, text: 'True Positive Rate' }, min: 0, max: 1 }
+                            }
+                        }
+                    });
+                }
+
+                // PR Curve
+                if (res.pr_curve) {
+                    new Chart(document.getElementById(`pr-${idx}`), {
+                        type: 'line',
+                        data: {
+                            labels: res.pr_curve.recall,
+                            datasets: [{
+                                label: 'PR Curve',
+                                data: res.pr_curve.precision,
+                                borderColor: '#00f2fe',
+                                tension: 0.1,
+                                fill: true,
+                                backgroundColor: 'rgba(0, 242, 254, 0.1)'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { title: { display: true, text: 'Recall' }, type: 'linear', position: 'bottom', min: 0, max: 1 },
+                                y: { title: { display: true, text: 'Precision' }, min: 0, max: 1 }
+                            }
+                        }
+                    });
+                }
+            } else {
+                // Residual Plot
+                if (res.residual_plot) {
+                    new Chart(document.getElementById(`rp-${idx}`), {
+                        type: 'scatter',
+                        data: {
+                            datasets: [{
+                                label: 'Residuals',
+                                data: res.residual_plot.y_pred.map((y, i) => ({ x: y, y: res.residual_plot.residuals[i] })),
+                                backgroundColor: '#f5576c'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { title: { display: true, text: 'Predicted Value' } },
+                                y: { title: { display: true, text: 'Residuals' } }
+                            }
+                        }
+                    });
+                }
+
+                // Actual vs Predicted
+                if (res.actual_vs_predicted) {
+                    new Chart(document.getElementById(`avp-${idx}`), {
+                        type: 'scatter',
+                        data: {
+                            datasets: [{
+                                label: 'Actual vs Predicted',
+                                data: res.actual_vs_predicted.y_true.map((y, i) => ({ x: y, y: res.actual_vs_predicted.y_pred[i] })),
+                                backgroundColor: '#667eea'
+                            }, {
+                                label: 'Ideal',
+                                data: [{ x: Math.min(...res.actual_vs_predicted.y_true), y: Math.min(...res.actual_vs_predicted.y_true) },
+                                       { x: Math.max(...res.actual_vs_predicted.y_true), y: Math.max(...res.actual_vs_predicted.y_true) }],
+                                type: 'line',
+                                borderColor: 'gray',
+                                borderDash: [5, 5],
+                                fill: false,
+                                pointRadius: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { title: { display: true, text: 'Actual Value' } },
+                                y: { title: { display: true, text: 'Predicted Value' } }
+                            }
+                        }
+                    });
+                }
+            }
+        });
     </script>
 
 </body>

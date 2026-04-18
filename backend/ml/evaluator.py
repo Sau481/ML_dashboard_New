@@ -1,14 +1,42 @@
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score, roc_auc_score,
     r2_score, mean_absolute_error, mean_squared_error, confusion_matrix,
-    average_precision_score
+    average_precision_score, roc_curve, precision_recall_curve
 )
-from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
+from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold, learning_curve
 from sklearn.pipeline import Pipeline
 import numpy as np
 import time
 import warnings
 warnings.filterwarnings('ignore')
+
+def downsample_list(lst, max_points=100):
+    """Downsample a list for visualization to keep JSON size manageable"""
+    if len(lst) <= max_points:
+        return [round(float(x), 4) for x in lst]
+    
+    indices = np.linspace(0, len(lst) - 1, max_points, dtype=int)
+    return [round(float(lst[i]), 4) for i in indices]
+
+def get_learning_curve(model, X, y, problem_type):
+    """Calculate learning curve data"""
+    try:
+        # Optimization: use fewer points for learning curve
+        train_sizes = np.linspace(0.1, 1.0, 5)
+        cv = 3
+        scoring = 'accuracy' if problem_type == 'classification' else 'r2'
+        
+        train_sizes_abs, train_scores, test_scores = learning_curve(
+            model, X, y, train_sizes=train_sizes, cv=cv, scoring=scoring, n_jobs=1
+        )
+        
+        return {
+            "train_sizes": train_sizes_abs.tolist(),
+            "train_scores": np.mean(train_scores, axis=1).tolist(),
+            "val_scores": np.mean(test_scores, axis=1).tolist()
+        }
+    except Exception:
+        return None
 
 def get_feature_importance(model, feature_names):
     """Extract and normalize feature importance from various model types"""
@@ -99,6 +127,9 @@ def evaluate_model(model_name, model, X_train, y_train, X_test, y_test, problem_
     # Feature importance
     feature_importance = get_feature_importance(model, feature_names)
     
+    # Learning curve
+    lc_data = get_learning_curve(model, X_train, y_train, problem_type)
+    
     # Evaluate on test set
     if problem_type == 'classification':
         result = evaluate_classification(
@@ -115,13 +146,14 @@ def evaluate_model(model_name, model, X_train, y_train, X_test, y_test, problem_
             cv_mean, cv_std
         )
     
-    # Add timing and feature importance
+    # Add timing, feature importance and learning curve
     result['training_time'] = round(training_time, 4)
     result['test_prediction_time'] = round(test_prediction_time, 4)
     result['val_prediction_time'] = round(val_prediction_time, 4)
     result['cv_time'] = round(cv_time, 4)
     result['total_time'] = round(training_time + test_prediction_time + cv_time, 4)
     result['feature_importance'] = feature_importance
+    result['learning_curve'] = lc_data
     
     return result
 
@@ -144,13 +176,35 @@ def evaluate_classification(model_name, model, X_train, y_train, X_test, y_test,
     # ROC AUC and PR-AUC if available
     test_roc_auc = None
     test_pr_auc = None
+    roc_data = None
+    pr_data = None
+    
     if hasattr(model, "predict_proba"):
         try:
             y_test_proba = model.predict_proba(X_test)
+            
+            # Binary classification case
             if y_test_proba.shape[1] == 2:
-                test_roc_auc = roc_auc_score(y_test, y_test_proba[:, 1])
-                test_pr_auc = average_precision_score(y_test, y_test_proba[:, 1])
+                y_score = y_test_proba[:, 1]
+                test_roc_auc = roc_auc_score(y_test, y_score)
+                test_pr_auc = average_precision_score(y_test, y_score)
+                
+                # Curve data
+                fpr, tpr, _ = roc_curve(y_test, y_score)
+                precision, recall, _ = precision_recall_curve(y_test, y_score)
+                
+                roc_data = {
+                    "fpr": downsample_list(fpr.tolist()),
+                    "tpr": downsample_list(tpr.tolist()),
+                    "auc": round(float(test_roc_auc), 4)
+                }
+                pr_data = {
+                    "precision": downsample_list(precision.tolist()),
+                    "recall": downsample_list(recall.tolist()),
+                    "auc": round(float(test_pr_auc), 4)
+                }
             else:
+                # Multiclass - use OvR
                 test_roc_auc = roc_auc_score(y_test, y_test_proba, multi_class='ovr')
                 test_pr_auc = average_precision_score(y_test, y_test_proba, average='weighted')
         except Exception:
@@ -174,7 +228,9 @@ def evaluate_classification(model_name, model, X_train, y_train, X_test, y_test,
         'test_roc_auc': round(test_roc_auc, 4) if test_roc_auc else None,
         'test_pr_auc': round(test_pr_auc, 4) if test_pr_auc else None,
         'confusion_matrix': test_confusion_matrix,
-        'overfitting_gap': round(train_accuracy - test_accuracy, 4)
+        'overfitting_gap': round(train_accuracy - test_accuracy, 4),
+        'roc_curve': roc_data,
+        'pr_curve': pr_data
     }
 
 def evaluate_regression(model_name, model, X_train, y_train, X_test, y_test, y_test_pred, cv_mean, cv_std):
@@ -189,6 +245,21 @@ def evaluate_regression(model_name, model, X_train, y_train, X_test, y_test, y_t
     test_mae = mean_absolute_error(y_test, y_test_pred)
     test_mse = mean_squared_error(y_test, y_test_pred)
     test_rmse = np.sqrt(test_mse)
+    
+    # Residuals
+    residuals = (y_test - y_test_pred).tolist()
+    y_pred_list = y_test_pred.tolist()
+    y_true_list = y_test.tolist()
+    
+    residual_plot = {
+        "y_pred": downsample_list(y_pred_list),
+        "residuals": downsample_list(residuals)
+    }
+    
+    actual_vs_predicted = {
+        "y_true": downsample_list(y_true_list),
+        "y_pred": downsample_list(y_pred_list)
+    }
     
     return {
         'model': model_name,
@@ -205,5 +276,7 @@ def evaluate_regression(model_name, model, X_train, y_train, X_test, y_test, y_t
         'test_mae': round(test_mae, 4),
         'test_mse': round(test_mse, 4),
         'test_rmse': round(test_rmse, 4),
-        'overfitting_gap': round(train_r2 - test_r2, 4)
+        'overfitting_gap': round(train_r2 - test_r2, 4),
+        'residual_plot': residual_plot,
+        'actual_vs_predicted': actual_vs_predicted
     }
