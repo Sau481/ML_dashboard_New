@@ -65,3 +65,14 @@ class TrainRequest(BaseModel):
     file_path: str
     target: str
     problem_type: Optional[str] = None
+
+class AnalyzeRequest(BaseModel):
+    file_path: str
+    target: str
+    model_name: str
+
+class AnalyzeResponse(BaseModel):
+    model: str
+    problem_type: str
+    metrics: Dict[str, Any]
+    graphs: Dict[str, str]

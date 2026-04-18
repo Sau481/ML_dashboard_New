@@ -1,59 +1,129 @@
-I have an ML pipeline where the user selects a target column from a dataset. I want you to VERIFY that the feature-target split is implemented correctly.
+I have an ML Dashboard project (FastAPI backend + HTML/JS frontend). After adding new features, the system has multiple bugs (empty dropdown, model mismatch, API errors), but my original ML pipeline and logic were correct.
+
+I want you to FIX all bugs WITHOUT changing my existing logic, architecture, or model configurations.
 
 ---
 
-### 🎯 Objective
+### 🚨 STRICT RULES (VERY IMPORTANT)
 
-Ensure that after selecting the target column:
-
-* The target variable (y) contains ONLY the selected column
-* The feature set (X) contains ALL remaining columns
-* The target column is NOT included in X
-
----
-
-### 🔍 What to check
-
-1. Verify correct splitting logic:
-
-   * y = df[target_column]
-   * X = df.drop(columns=[target_column])
-
-2. Ensure:
-
-   * Target column is completely removed from features
-   * No accidental inclusion of target in X
-
-3. Confirm:
-
-   * All other columns are included in X
-   * No columns are unintentionally dropped
-
-4. Check for bugs like:
-
-   * Using full dataframe as X
-   * Dropping wrong column
-   * Incorrect variable assignment
+* DO NOT change ML logic (models, preprocessing, pipelines)
+* DO NOT remove or replace models (e.g., SVR, SVM, Gradient Boosting)
+* DO NOT redesign the system
+* DO NOT introduce new architecture
+* ONLY fix bugs, mismatches, and broken integrations
 
 ---
 
-### 📦 Output Required
+### 🎯 OBJECTIVE
 
-* Confirm whether splitting is correct or not
-* If incorrect:
+Restore system to a fully working state where:
 
-  * Identify the exact issue
-  * Provide corrected code snippet
-* Brief explanation of the fix
-
----
-
-### ⚠️ Important
-
-* Do NOT modify overall pipeline logic
-* Focus ONLY on feature-target splitting correctness
-* Keep the fix minimal and precise
+* Frontend UI works correctly
+* Dropdown shows correct models
+* Backend accepts selected models
+* No runtime errors occur
+* Results remain SAME as before
 
 ---
 
-Here is my code:
+# 🔧 BACKEND FIXES
+
+1. Ensure `get_models()` remains unchanged
+
+2. Fix `/analyze-model`:
+
+   * Validate `model_name` against `get_models().keys()`
+   * Return clear error if invalid (do NOT crash)
+
+3. Ensure:
+
+   * SAME preprocessing is used as `/train`
+   * No duplicate or separate pipelines
+
+4. Fix API endpoint (if used):
+
+   * `/available-models` must return EXACT model names from `get_models()`
+   * Format must match frontend expectation
+
+---
+
+# 🎨 FRONTEND FIXES
+
+1. Fix dropdown NOT populating:
+
+   * Ensure JavaScript runs without errors
+   * Fix any undefined variables (e.g., dataset_size)
+   * Ensure correct API endpoint is called
+
+2. Remove fragile logic:
+
+   * DO NOT calculate dataset_size in frontend
+   * Let backend handle all model decisions
+
+3. Fix dropdown population:
+
+   * Use backend response directly
+   * Ensure correct JSON parsing
+
+4. Fix element bindings:
+
+   * Ensure correct IDs (e.g., `model-select`)
+   * Ensure JS runs after DOM loads
+
+---
+
+# 🔁 FRONTEND ↔ BACKEND SYNC
+
+* Model names must match EXACTLY (case-sensitive)
+* No mismatch like:
+
+  * "SVR" vs missing backend model
+  * "SVM" vs "svm"
+
+---
+
+# 🧪 DEBUGGING FIXES
+
+Add temporary logs:
+
+Frontend:
+
+```javascript
+console.log("Fetching models...");
+console.log(response);
+```
+
+Backend:
+
+```python
+print("Available models:", models.keys())
+```
+
+---
+
+# ✅ VALIDATION CHECKLIST
+
+* Dropdown shows models correctly
+* No empty dropdown
+* No console errors
+* No "Model not available" errors
+* Compare mode works unchanged
+* Single model mode works correctly
+* Results match previous outputs
+
+---
+
+# 📦 OUTPUT REQUIRED
+
+* Minimal code fixes only
+* Corrected JS for dropdown
+* Corrected API usage
+* Explanation of root causes (what broke and why)
+
+---
+
+### ⚠️ FINAL NOTE
+
+This is a **bug fixing and synchronization task only**, not a refactor or upgrade.
+
+Preserve all existing logic and behavior.

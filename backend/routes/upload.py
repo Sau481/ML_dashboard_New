@@ -42,7 +42,7 @@ async def upload(request: Request, file: UploadFile = File(...)):
                 request=request,
                 name="select_target.html",
                 context={
-                    "file_path": path,
+                    "file_path": path.replace("\\", "/"),
                     "overview": overview,
                     "column_metadata": column_metadata
                 }
