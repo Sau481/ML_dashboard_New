@@ -733,3 +733,123 @@ code {
     transition: var(--transition-fast);
 }
 
+/* ---------- Confusion Matrix (Heatmap) ---------- */
+.cm-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: var(--spacing-lg) 0;
+}
+
+.cm-wrapper {
+    position: relative;
+    padding: 30px 40px 40px 60px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.cm-axis-label-x {
+    position: absolute;
+    top: 5px;
+    left: 60px;
+    right: 40px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.cm-axis-label-y {
+    position: absolute;
+    left: 10px;
+    top: 30px;
+    bottom: 40px;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.cm-grid-layout {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    gap: 10px;
+}
+
+.cm-cell {
+    width: 140px;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
+    position: relative;
+    color: white;
+}
+
+.cm-cell:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-md);
+}
+
+.cm-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.cm-label {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+/* Heatmap colors with intensity based on opacity or specific colors */
+.cm-cell-0-0 { background: #667eea; } /* TN: Primary Blue */
+.cm-cell-0-1 { background: #f5576c; opacity: 0.7; } /* FP: Accent Red/Pink */
+.cm-cell-1-0 { background: #f5576c; opacity: 0.5; } /* FN: Accent Red/Pink (lighter) */
+.cm-cell-1-1 { background: #4facfe; } /* TP: Success Blue/Cyan */
+
+.cm-header-labels {
+    display: grid;
+    grid-template-columns: 140px 140px;
+    gap: 10px;
+    margin-left: 60px;
+    margin-bottom: 5px;
+}
+
+.cm-header-label {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.cm-row-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.cm-row-label {
+    width: 60px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-align: right;
+    margin-right: 15px;
+}
+

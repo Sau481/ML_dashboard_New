@@ -152,32 +152,45 @@
 
             <!-- Confusion Matrix -->
             {% if res.confusion_matrix %}
-            <div style="margin: 20px 10px;">
-                <h4 style="text-align: center;">Confusion Matrix (Test Set)</h4>
-                <div style="overflow-x: auto;">
-                    <table style="margin: auto; border-collapse: collapse; min-width: 200px;">
-                        <thead>
-                            <tr style="background: rgba(102,126,234,0.2);">
-                                <th style="padding: 8px; border: 1px solid rgba(255,255,255,0.2);"></th>
-                                {% for i in range(res.confusion_matrix|length) %}
-                                <th style="padding: 8px; border: 1px solid rgba(255,255,255,0.2);">Pred {{ i }}</th>
-                                {% endfor %}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in res.confusion_matrix %}
-                            <tr>
-                                <th
-                                    style="padding: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(102,126,234,0.2);">
-                                    True {{ loop.index0 }}</th>
-                                {% for val in row %}
-                                <td style="padding: 8px; border: 1px solid rgba(255,255,255,0.2); text-align: center;">
-                                    {{ val }}</td>
-                                {% endfor %}
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="cm-container">
+                <h4 style="text-align: center; margin-bottom: 20px;">Confusion Matrix (Test Set)</h4>
+                
+                <div class="cm-wrapper">
+                    <div class="cm-axis-label-x">Predicted</div>
+                    <div class="cm-axis-label-y">Actual</div>
+                    
+                    <div class="cm-header-labels">
+                        <div class="cm-header-label">Class 0</div>
+                        <div class="cm-header-label">Class 1</div>
+                    </div>
+
+                    <div class="cm-row-container">
+                        <div class="cm-row-label">Class 0</div>
+                        <div class="cm-grid-layout">
+                            <div class="cm-cell cm-cell-0-0" style="opacity: {{ (res.confusion_matrix[0][0] / res.test_samples * 0.7) + 0.3 }}">
+                                <span class="cm-value">{{ res.confusion_matrix[0][0] }}</span>
+                                <span class="cm-label">True Neg</span>
+                            </div>
+                            <div class="cm-cell cm-cell-0-1" style="opacity: {{ (res.confusion_matrix[0][1] / res.test_samples * 0.7) + 0.3 }}">
+                                <span class="cm-value">{{ res.confusion_matrix[0][1] }}</span>
+                                <span class="cm-label">False Pos</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cm-row-container">
+                        <div class="cm-row-label">Class 1</div>
+                        <div class="cm-grid-layout">
+                            <div class="cm-cell cm-cell-1-0" style="opacity: {{ (res.confusion_matrix[1][0] / res.test_samples * 0.7) + 0.3 }}">
+                                <span class="cm-value">{{ res.confusion_matrix[1][0] }}</span>
+                                <span class="cm-label">False Neg</span>
+                            </div>
+                            <div class="cm-cell cm-cell-1-1" style="opacity: {{ (res.confusion_matrix[1][1] / res.test_samples * 0.7) + 0.3 }}">
+                                <span class="cm-value">{{ res.confusion_matrix[1][1] }}</span>
+                                <span class="cm-label">True Pos</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             {% endif %}
@@ -247,14 +260,6 @@
                 {% endif %}
 
                 {% if problem_type == 'classification' %}
-                    <!-- Confusion Matrix -->
-                    {% if res.confusion_matrix %}
-                    <div class="metric-item" style="height: 300px; display: block;">
-                        <h5 style="margin-bottom: 10px;">Confusion Matrix</h5>
-                        <canvas id="cm-{{ loop.index }}"></canvas>
-                    </div>
-                    {% endif %}
-
                     <!-- ROC Curve -->
                     {% if res.roc_curve %}
                     <div class="metric-item" style="height: 300px; display: block;">
@@ -432,43 +437,6 @@
             }
 
             if (type === 'classification') {
-                // Confusion Matrix (Heatmap-like)
-                if (res.confusion_matrix) {
-                    const cmData = [];
-                    res.confusion_matrix.forEach((row, i) => {
-                        row.forEach((val, j) => {
-                            cmData.push({ x: j, y: i, v: val });
-                        });
-                    });
-
-                    new Chart(document.getElementById(`cm-${idx}`), {
-                        type: 'bubble',
-                        data: {
-                            datasets: [{
-                                label: 'Matrix Values',
-                                data: cmData.map(d => ({ x: d.x, y: d.y, r: Math.log1p(d.v) * 5 })),
-                                backgroundColor: 'rgba(102, 126, 234, 0.6)',
-                                borderColor: '#667eea'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                x: { title: { display: true, text: 'Predicted' }, min: -0.5, max: res.confusion_matrix.length - 0.5 },
-                                y: { title: { display: true, text: 'True' }, min: -0.5, max: res.confusion_matrix.length - 0.5 }
-                            },
-                            plugins: {
-                                tooltip: {
-                                    callbacks: {
-                                        label: (ctx) => `True: ${ctx.raw.y}, Pred: ${ctx.raw.x}, Count: ${cmData[ctx.dataIndex].v}`
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-
                 // ROC Curve
                 if (res.roc_curve) {
                     new Chart(document.getElementById(`roc-${idx}`), {
