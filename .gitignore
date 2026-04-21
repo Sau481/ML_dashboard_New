@@ -9,6 +9,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*.pyc
+*.pyo
+*.pyd
+
 # Ignore user uploads and results
 backend/uploads/*
 !backend/uploads/.gitkeep
